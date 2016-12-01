@@ -51,7 +51,6 @@ import org.jumpmind.symmetric.ddl.alteration.AddTableChange;
 import org.jumpmind.symmetric.ddl.alteration.ColumnAutoIncrementChange;
 import org.jumpmind.symmetric.ddl.alteration.ColumnDataTypeChange;
 import org.jumpmind.symmetric.ddl.alteration.ColumnDefaultValueChange;
-import org.jumpmind.symmetric.ddl.alteration.ColumnOrderChange;
 import org.jumpmind.symmetric.ddl.alteration.ColumnRequiredChange;
 import org.jumpmind.symmetric.ddl.alteration.ColumnSizeChange;
 import org.jumpmind.symmetric.ddl.alteration.ModelChange;
@@ -571,7 +570,6 @@ public abstract class SqlBuilder
                                                                          PrimaryKeyChange.class,
                                                                          RemoveColumnChange.class,
                                                                          AddColumnChange.class,
-                                                                         ColumnOrderChange.class,
                                                                          ColumnAutoIncrementChange.class,
                                                                          ColumnDefaultValueChange.class,
                                                                          ColumnRequiredChange.class,
@@ -984,6 +982,7 @@ public abstract class SqlBuilder
                 createTable(desiredModel, realTargetTable, parameters);
                 writeCopyDataStatement(tempTable, targetTable);
                 dropTemporaryTable(desiredModel, tempTable);
+                writeFixLastIdentityValues(targetTable);
             }
             else
             {
@@ -1773,6 +1772,27 @@ public abstract class SqlBuilder
     {
         // No default possible as the databases are quite different in this respect
         return null;
+    }
+
+    /**
+     * Generates the SQL to execute that sets the current sequence number.
+     * 
+     * @param table
+     * @param id
+     * @return
+     */
+    public String fixLastIdentityValues(Table table)
+    {
+       return null; 
+    }
+
+    public void writeFixLastIdentityValues(Table table) throws IOException
+    {
+       String sql = fixLastIdentityValues(table);
+       if (sql != null) {
+           print(sql);
+           printEndOfStatement();
+       }
     }
 
     //
