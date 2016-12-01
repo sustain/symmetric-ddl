@@ -19,6 +19,7 @@ package org.jumpmind.symmetric.ddl.platform.hsqldb2;
  * under the License.
  */
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -31,14 +32,12 @@ import org.jumpmind.symmetric.ddl.model.TypeMap;
 import org.jumpmind.symmetric.ddl.platform.DatabaseMetaDataWrapper;
 import org.jumpmind.symmetric.ddl.platform.JdbcModelReader;
 
-/**
+/*
  * Reads a database model from a HsqlDb database.
- *
- * @version $Revision: $
  */
 public class HsqlDb2ModelReader extends JdbcModelReader
 {
-    /**
+    /*
      * Creates a new model reader for HsqlDb databases.
      * 
      * @param platform The platform that this model reader belongs to
@@ -50,30 +49,8 @@ public class HsqlDb2ModelReader extends JdbcModelReader
         setDefaultSchemaPattern(null);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    protected Table readTable(DatabaseMetaDataWrapper metaData, Map values) throws SQLException
-    {
-        Table table = super.readTable(metaData, values);
-
-        if (table != null)
-        {
-            // For at least version 1.7.2 we have to determine the auto-increment columns
-            // from a result set meta data because the database does not put this info
-            // into the database metadata
-            // Since Hsqldb only allows IDENTITY for primary key columns, we restrict
-            // our search to those columns
-            determineAutoIncrementFromResultSetMetaData(table, table.getPrimaryKeyColumns());
-        }
-        
-        return table;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected Column readColumn(DatabaseMetaDataWrapper metaData, Map values) throws SQLException
+    @Override
+    protected Column readColumn(DatabaseMetaDataWrapper metaData, Map<String,Object> values) throws SQLException
     {
         Column column = super.readColumn(metaData, values);
 
@@ -82,26 +59,28 @@ public class HsqlDb2ModelReader extends JdbcModelReader
         {
             column.setDefaultValue(unescape(column.getDefaultValue(), "'", "''"));
         }
+        
+        String autoIncrement = (String)values.get("IS_AUTOINCREMENT");
+        if (autoIncrement != null) {
+            column.setAutoIncrement("YES".equalsIgnoreCase(autoIncrement.trim()));
+        }
         return column;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    protected boolean isInternalForeignKeyIndex(DatabaseMetaDataWrapper metaData, Table table, ForeignKey fk, Index index)
+    @Override
+    protected boolean isInternalForeignKeyIndex(Connection connection, DatabaseMetaDataWrapper metaData, Table table, ForeignKey fk, Index index)
     {
         String name = index.getName();
 
         return (name != null) && name.startsWith("SYS_IDX_");
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    protected boolean isInternalPrimaryKeyIndex(DatabaseMetaDataWrapper metaData, Table table, Index index)
+    @Override
+    protected boolean isInternalPrimaryKeyIndex(Connection connection,DatabaseMetaDataWrapper metaData, Table table, Index index)
     {
         String name = index.getName();
 
         return (name != null) && (name.startsWith("SYS_PK_") || name.startsWith("SYS_IDX_"));
     }
+    
 }

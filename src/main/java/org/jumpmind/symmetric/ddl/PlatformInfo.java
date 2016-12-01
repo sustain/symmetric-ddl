@@ -23,158 +23,164 @@ import java.lang.reflect.Field;
 import java.sql.Types;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-/**
+/*
  * Contains information about the database platform such as supported features and native type mappings.
  */
 public class PlatformInfo
 {
-    /** The Log to which logging calls will be made. */
-    private final Log _log = LogFactory.getLog(PlatformInfo.class);
+    /* The Log to which logging calls will be made. */
+    private final Log log = LogFactory.getLog(PlatformInfo.class);
 
     // properties influencing the definition of columns
     
-    /** Whether the database requires the explicit stating of NULL as the default value. */
-    private boolean _nullAsDefaultValueRequired = false;
+    /* Whether the database requires the explicit stating of NULL as the default value. */
+    private boolean nullAsDefaultValueRequired = false;
 
-    /** Whether default values can be defined for LONGVARCHAR/LONGVARBINARY columns. */
-    private boolean _defaultValuesForLongTypesSupported = true;
+    /* Whether default values can be defined for LONGVARCHAR/LONGVARBINARY columns. */
+    private boolean defaultValuesForLongTypesSupported = true;
 
     // properties influencing the specification of table constraints
     
-    /** Whether primary key constraints are embedded inside the create table statement. */
-    private boolean _primaryKeyEmbedded = true;
+    /* Whether primary key constraints are embedded inside the create table statement. */
+    private boolean primaryKeyEmbedded = true;
     
-    /** Whether foreign key constraints are embedded inside the create table statement. */
-    private boolean _foreignKeysEmbedded = false;
+    /* Whether foreign key constraints are embedded inside the create table statement. */
+    private boolean foreignKeysEmbedded = false;
 
-    /** Whether embedded foreign key constraints are explicitly named. */
-    private boolean _embeddedForeignKeysNamed = false;
+    /* Whether embedded foreign key constraints are explicitly named. */
+    private boolean embeddedForeignKeysNamed = false;
 
-    /** Whether non-unique indices are supported. */
-    private boolean _indicesSupported = true;
+    /* Whether non-unique indices are supported. */
+    private boolean indicesSupported = true;
 
-    /** Whether indices are embedded inside the create table statement. */
-    private boolean _indicesEmbedded = false;
+    /* Whether indices are embedded inside the create table statement. */
+    private boolean indicesEmbedded = false;
+    
+    private boolean triggersSupported = true;
 
-    /** Whether identity specification is supported for non-primary key columns. */
-    private boolean _nonPKIdentityColumnsSupported = true;
+    /* Whether identity specification is supported for non-primary key columns. */
+    private boolean nonPKIdentityColumnsSupported = true;
 
-    /** Whether the auto-increment definition is done via the DEFAULT part of the column definition. */
-    private boolean _defaultValueUsedForIdentitySpec = false;
+    /* Whether the auto-increment definition is done via the DEFAULT part of the column definition. */
+    private boolean defaultValueUsedForIdentitySpec = false;
 
     // properties influencing the reading of models from live databases
     
-    /** Whether system indices (database-generated indices for primary and foreign keys) are returned when
+    /* Whether system indices (database-generated indices for primary and foreign keys) are returned when
         reading a model from a database. */
-    private boolean _systemIndicesReturned = true;
+    private boolean systemIndicesReturned = true;
 
-    /** Whether system indices for foreign keys are always non-unique or can be
+    /* Whether system indices for foreign keys are always non-unique or can be
         unique (i.e. if a primary key column is used to establish the foreign key). */
-    private boolean _systemForeignKeyIndicesAlwaysNonUnique = false;
+    private boolean systemForeignKeyIndicesAlwaysNonUnique = false;
     
-    /** Whether the database returns a synthetic default value for non-identity required columns. */ 
-    private boolean _syntheticDefaultValueForRequiredReturned = false;
+    /* Whether the database returns a synthetic default value for non-identity required columns. */ 
+    private boolean syntheticDefaultValueForRequiredReturned = false;
 
-    /** Whether the platform is able to determine auto increment status from an existing database. */ 
-    private boolean _identityStatusReadingSupported = true;
+    /* Whether the platform is able to determine auto increment status from an existing database. */ 
+    private boolean identityStatusReadingSupported = true;
 
     // other DDL/DML properties
 
-    /** Whether comments are supported. */
-    private boolean _sqlCommentsSupported = true;
+    /* Whether comments are supported. */
+    private boolean sqlCommentsSupported = true;
 
-    /** Whether delimited identifiers are supported or not. */
-    private boolean _delimitedIdentifiersSupported = true;
+    /* Whether delimited identifiers are supported or not. */
+    private boolean delimitedIdentifiersSupported = true;
     
-    /** Whether an ALTER TABLE is needed to drop indexes. */
-    private boolean _alterTableForDropUsed = false;
+    /* Whether an ALTER TABLE is needed to drop indexes. */
+    private boolean alterTableForDropUsed = false;
 
-    /** Whether the platform allows for the explicit specification of values for identity columns in INSERT
+    /* Whether the platform allows for the explicit specification of values for identity columns in INSERT
         and UPDATE statements. */ 
-    private boolean _identityOverrideAllowed = true;
+    private boolean identityOverrideAllowed = true;
 
-    /** Whether the values of identity columns can be read back from the database after insertion. */ 
-    private boolean _lastIdentityValueReadable = true;
+    /* Whether the values of identity columns can be read back from the database after insertion. */ 
+    private boolean lastIdentityValueReadable = true;
 
-    /** Whether auto-commit mode for the reading of the values of identity columns after insertion
+    /* Whether auto-commit mode for the reading of the values of identity columns after insertion
         shall be used. */ 
-    private boolean _autoCommitModeForLastIdentityValueReading = true;
+    private boolean autoCommitModeForLastIdentityValueReading = true;
 
-    /** Specifies the maximum length that a table name can have for this database (-1 if there is no limit). */
-    private int _maxTableNameLength = -1;
+    /* Specifies the maximum length that a table name can have for this database (-1 if there is no limit). */
+    private int maxTableNameLength = -1;
 
-    /** Specifies the maximum length that a column name can have for this database (-1 if there is no limit). */
-    private int _maxColumnNameLength = -1;
+    /* Specifies the maximum length that a column name can have for this database (-1 if there is no limit). */
+    private int maxColumnNameLength = -1;
 
-    /** Specifies the maximum length that a constraint name can have for this database (-1 if there is no limit). */
-    private int _maxConstraintNameLength = -1;
+    /* Specifies the maximum length that a constraint name can have for this database (-1 if there is no limit). */
+    private int maxConstraintNameLength = -1;
 
-    /** Specifies the maximum length that a foreign key name can have for this database (-1 if there is no limit). */
-    private int _maxForeignKeyNameLength = -1;
+    /* Specifies the maximum length that a foreign key name can have for this database (-1 if there is no limit). */
+    private int maxForeignKeyNameLength = -1;
 
-    /** The string used for delimiting SQL identifiers, eg. table names, column names etc. */
-    private String _delimiterToken = "\"";
+    /* The string used for delimiting SQL identifiers, eg. table names, column names etc. */
+    private String delimiterToken = "\"";
 
-    /** The string used for escaping values when generating textual SQL statements. */
-    private String _valueQuoteToken = "'";
+    /* The string used for escaping values when generating textual SQL statements. */
+    private String valueQuoteToken = "'";
 
-    /** The string that starts a comment. */
-    private String _commentPrefix = "--";
+    /* The string that starts a comment. */
+    private String commentPrefix = "--";
 
-    /** The string that ends a comment. */
-    private String _commentSuffix = "";
+    /* The string that ends a comment. */
+    private String commentSuffix = "";
 
-    /** The text separating individual sql commands. */
-    private String _sqlCommandDelimiter = ";";
+    /* The text separating individual sql commands. */
+    private String sqlCommandDelimiter = ";";
+    
+    private boolean storesUpperCaseInCatalog = false;
 
-    /** Contains non-default mappings from jdbc to native types. */
-    private HashMap _nativeTypes = new HashMap();
+    /* Contains non-default mappings from jdbc to native types. */
+    private Map<Integer,String> nativeTypes = new HashMap<Integer,String>();
 
-    /** Contains the jdbc types corresponding to the native types for non-default mappings. */
-    private HashMap _targetJdbcTypes = new HashMap();
+    /* Contains the jdbc types corresponding to the native types for non-default mappings. */
+    private Map<Integer, Integer> targetJdbcTypes = new HashMap<Integer, Integer>();
 
-    /** Contains those JDBC types whose corresponding native types have a null value as the default value. */
-    private HashSet _typesWithNullDefault = new HashSet();
+    /* Contains those JDBC types whose corresponding native types have a null value as the default value. */
+    private Set<Integer> typesWithNullDefault = new HashSet<Integer>();
 
-    /** Contains those JDBC types whose corresponding native types are types that have a size on this platform. */
-    private HashSet _typesWithSize = new HashSet();
+    /* Contains those JDBC types whose corresponding native types are types that have a size on this platform. */
+    private Set<Integer> typesWithSize = new HashSet<Integer>();
 
-    /** Contains the default sizes for those JDBC types whose corresponding native types require a size. */
-    private HashMap _typesDefaultSizes = new HashMap();
+    /* Contains the default sizes for those JDBC types whose corresponding native types require a size. */
+    private Map<Integer, Integer> typesDefaultSizes = new HashMap<Integer, Integer>();
 
-    /** Contains those JDBC types whose corresponding native types are types that have precision and scale on this platform. */
-    private HashSet _typesWithPrecisionAndScale = new HashSet();
+    /* Contains those JDBC types whose corresponding native types are types that have precision and scale on this platform. */
+    private HashSet<Integer> typesWithPrecisionAndScale = new HashSet<Integer>();
 
-    /**
+    /*
      * Creates a new platform info object.
      */
     public PlatformInfo()
     {
-        _typesWithNullDefault.add(new Integer(Types.CHAR));
-        _typesWithNullDefault.add(new Integer(Types.VARCHAR));
-        _typesWithNullDefault.add(new Integer(Types.LONGVARCHAR));
-        _typesWithNullDefault.add(new Integer(Types.CLOB));
-        _typesWithNullDefault.add(new Integer(Types.BINARY));
-        _typesWithNullDefault.add(new Integer(Types.VARBINARY));
-        _typesWithNullDefault.add(new Integer(Types.LONGVARBINARY));
-        _typesWithNullDefault.add(new Integer(Types.BLOB));
+        this.typesWithNullDefault.add(new Integer(Types.CHAR));
+        this.typesWithNullDefault.add(new Integer(Types.VARCHAR));
+        this.typesWithNullDefault.add(new Integer(Types.LONGVARCHAR));
+        this.typesWithNullDefault.add(new Integer(Types.CLOB));
+        this.typesWithNullDefault.add(new Integer(Types.BINARY));
+        this.typesWithNullDefault.add(new Integer(Types.VARBINARY));
+        this.typesWithNullDefault.add(new Integer(Types.LONGVARBINARY));
+        this.typesWithNullDefault.add(new Integer(Types.BLOB));
 
-        _typesWithSize.add(new Integer(Types.CHAR));
-        _typesWithSize.add(new Integer(Types.VARCHAR));
-        _typesWithSize.add(new Integer(Types.BINARY));
-        _typesWithSize.add(new Integer(Types.VARBINARY));
+        this.typesWithSize.add(new Integer(Types.CHAR));
+        this.typesWithSize.add(new Integer(Types.VARCHAR));
+        this.typesWithSize.add(new Integer(Types.BINARY));
+        this.typesWithSize.add(new Integer(Types.VARBINARY));
 
-        _typesWithPrecisionAndScale.add(new Integer(Types.DECIMAL));
-        _typesWithPrecisionAndScale.add(new Integer(Types.NUMERIC));
+        this.typesWithPrecisionAndScale.add(new Integer(Types.DECIMAL));
+        this.typesWithPrecisionAndScale.add(new Integer(Types.NUMERIC));
     }
 
     // properties influencing the definition of columns
 
-    /**
+    /*
      * Determines whether a NULL needs to be explicitly stated when the column
      * has no specified default value. Default is false.
      * 
@@ -182,9 +188,9 @@ public class PlatformInfo
      */
     public boolean isNullAsDefaultValueRequired()
     {
-        return _nullAsDefaultValueRequired;
+        return nullAsDefaultValueRequired;
     }
-    /**
+    /*
      * Specifies whether a NULL needs to be explicitly stated when the column
      * has no specified default value. Default is false.
      *
@@ -193,32 +199,32 @@ public class PlatformInfo
      */
     public void setNullAsDefaultValueRequired(boolean requiresNullAsDefaultValue)
     {
-        _nullAsDefaultValueRequired = requiresNullAsDefaultValue;
+        this.nullAsDefaultValueRequired = requiresNullAsDefaultValue;
     }
 
-    /**
+    /*
      * Determines whether default values can be specified for LONGVARCHAR/LONGVARBINARY columns.
      *
      * @return <code>true</code> if default values are allowed
      */
     public boolean isDefaultValuesForLongTypesSupported()
     {
-        return _defaultValuesForLongTypesSupported;
+        return defaultValuesForLongTypesSupported;
     }
 
-    /**
+    /*
      * Specifies whether default values can be specified for LONGVARCHAR/LONGVARBINARY columns.
      *
      * @param isSupported <code>true</code> if default values are supported
      */
     public void setDefaultValuesForLongTypesSupported(boolean isSupported)
     {
-        _defaultValuesForLongTypesSupported = isSupported;
+        this.defaultValuesForLongTypesSupported = isSupported;
     }
 
     // properties influencing the specification of table constraints
 
-    /**
+    /*
      * Determines whether primary key constraints are embedded in the create 
      * table clause or as seperate alter table statements. The default is
      * embedded pks.
@@ -227,10 +233,10 @@ public class PlatformInfo
      */
     public boolean isPrimaryKeyEmbedded()
     {
-        return _primaryKeyEmbedded;
+        return primaryKeyEmbedded;
     }
 
-    /**
+    /*
      * Specifies whether the primary key constraints are embedded in the create 
      * table clause or as seperate alter table statements.
      * 
@@ -238,10 +244,10 @@ public class PlatformInfo
      */
     public void setPrimaryKeyEmbedded(boolean primaryKeyEmbedded)
     {
-        _primaryKeyEmbedded = primaryKeyEmbedded;
+        this.primaryKeyEmbedded = primaryKeyEmbedded;
     }
 
-    /**
+    /*
      * Determines whether foreign key constraints are embedded in the create 
      * table clause or as seperate alter table statements. Per default,
      * foreign keys are external.
@@ -250,10 +256,10 @@ public class PlatformInfo
      */
     public boolean isForeignKeysEmbedded()
     {
-        return _foreignKeysEmbedded;
+        return foreignKeysEmbedded;
     }
 
-    /**
+    /*
      * Specifies whether foreign key constraints are embedded in the create 
      * table clause or as seperate alter table statements.
      * 
@@ -261,50 +267,50 @@ public class PlatformInfo
      */
     public void setForeignKeysEmbedded(boolean foreignKeysEmbedded)
     {
-        _foreignKeysEmbedded = foreignKeysEmbedded;
+        this.foreignKeysEmbedded = foreignKeysEmbedded;
     }
 
-    /**
+    /*
      * Returns whether embedded foreign key constraints should have a name.
      * 
      * @return <code>true</code> if embedded fks have name
      */
     public boolean isEmbeddedForeignKeysNamed()
     {
-        return _embeddedForeignKeysNamed;
+        return embeddedForeignKeysNamed;
     }
 
-    /**
+    /*
      * Specifies whether embedded foreign key constraints should be named.
      * 
      * @param embeddedForeignKeysNamed Whether embedded fks shall have a name
      */
     public void setEmbeddedForeignKeysNamed(boolean embeddedForeignKeysNamed)
     {
-        _embeddedForeignKeysNamed = embeddedForeignKeysNamed;
+        this.embeddedForeignKeysNamed = embeddedForeignKeysNamed;
     }
 
-    /**
+    /*
      * Determines whether indices are supported.
      *
      * @return <code>true</code> if indices are supported
      */
     public boolean isIndicesSupported()
     {
-        return _indicesSupported;
+        return indicesSupported;
     }
 
-    /**
+    /*
      * Specifies whether indices are supported.
      *
      * @param supportingIndices <code>true</code> if indices are supported
      */
     public void setIndicesSupported(boolean supportingIndices)
     {
-        _indicesSupported = supportingIndices;
+        this.indicesSupported = supportingIndices;
     }
 
-    /**
+    /*
      * Determines whether the indices are embedded in the create table clause
      * or as seperate statements. Per default, indices are external.
      * 
@@ -312,10 +318,10 @@ public class PlatformInfo
      */
     public boolean isIndicesEmbedded()
     {
-        return _indicesEmbedded;
+        return indicesEmbedded;
     }
 
-    /**
+    /*
      * Specifies whether indices are embedded in the create table clause or
      * as seperate alter table statements.
      * 
@@ -323,20 +329,20 @@ public class PlatformInfo
      */
     public void setIndicesEmbedded(boolean indicesEmbedded)
     {
-        _indicesEmbedded = indicesEmbedded;
+        this.indicesEmbedded = indicesEmbedded;
     }
 
-    /**
+    /*
      * Determines whether non-primary key columns can be auto-incrementing (IDENTITY columns).
      *
      * @return <code>true</code> if normal non-PK columns can be auto-incrementing
      */
     public boolean isNonPKIdentityColumnsSupported()
     {
-        return _nonPKIdentityColumnsSupported;
+        return nonPKIdentityColumnsSupported;
     }
 
-    /**
+    /*
      * Specifies whether non-primary key columns can be auto-incrementing (IDENTITY columns).
      *
      * @param supportingNonPKIdentityColumns <code>true</code> if normal non-PK columns can
@@ -344,10 +350,10 @@ public class PlatformInfo
      */
     public void setNonPKIdentityColumnsSupported(boolean supportingNonPKIdentityColumns)
     {
-        _nonPKIdentityColumnsSupported = supportingNonPKIdentityColumns;
+        this.nonPKIdentityColumnsSupported = supportingNonPKIdentityColumns;
     }
 
-    /**
+    /*
      * Determines whether the auto-increment specification uses the DEFAULT value of the
      * column definition.
      *
@@ -355,10 +361,10 @@ public class PlatformInfo
      */
     public boolean isDefaultValueUsedForIdentitySpec()
     {
-        return _defaultValueUsedForIdentitySpec;
+        return defaultValueUsedForIdentitySpec;
     }
 
-    /**
+    /*
      * Specifies whether the auto-increment specification uses the DEFAULT value of the
      * column definition.
      *
@@ -367,12 +373,12 @@ public class PlatformInfo
      */
     public void setDefaultValueUsedForIdentitySpec(boolean identitySpecUsesDefaultValue)
     {
-        _defaultValueUsedForIdentitySpec = identitySpecUsesDefaultValue;
+        this.defaultValueUsedForIdentitySpec = identitySpecUsesDefaultValue;
     }
 
     // properties influencing the reading of models from live databases
 
-    /**
+    /*
      * Determines whether database-generated indices for primary and foreign keys are
      * returned when reading a model from a database.
      *
@@ -380,10 +386,10 @@ public class PlatformInfo
      */
     public boolean isSystemIndicesReturned()
     {
-        return _systemIndicesReturned;
+        return systemIndicesReturned;
     }
 
-    /**
+    /*
      * Specifies whether database-generated indices for primary and foreign keys are
      * returned when reading a model from a database.
      *
@@ -392,10 +398,10 @@ public class PlatformInfo
      */
     public void setSystemIndicesReturned(boolean returningSystemIndices)
     {
-        _systemIndicesReturned = returningSystemIndices;
+        this.systemIndicesReturned = returningSystemIndices;
     }
 
-    /**
+    /*
      * Determines whether system indices for foreign keys are always non-unique or can be
      * unique (i.e. if a primary key column is used to establish the foreign key).
      * 
@@ -404,10 +410,10 @@ public class PlatformInfo
      */
     public boolean isSystemForeignKeyIndicesAlwaysNonUnique()
     {
-        return _systemForeignKeyIndicesAlwaysNonUnique;
+        return systemForeignKeyIndicesAlwaysNonUnique;
     }
 
-    /**
+    /*
      * Specifies whether system indices for foreign keys are always non-unique or can be
      * unique (i.e. if a primary key column is used to establish the foreign key).
      * 
@@ -416,10 +422,10 @@ public class PlatformInfo
      */
     public void setSystemForeignKeyIndicesAlwaysNonUnique(boolean alwaysNonUnique)
     {
-        _systemForeignKeyIndicesAlwaysNonUnique = alwaysNonUnique;
+        this.systemForeignKeyIndicesAlwaysNonUnique = alwaysNonUnique;
     }
 
-    /**
+    /*
      * Determines whether the platform returns synthetic default values (e.g. 0 for numeric
      * columns etc.) for non-identity required columns when reading a model from a database.
      *
@@ -428,10 +434,10 @@ public class PlatformInfo
      */
     public boolean isSyntheticDefaultValueForRequiredReturned()
     {
-        return _syntheticDefaultValueForRequiredReturned;
+        return syntheticDefaultValueForRequiredReturned;
     }
 
-    /**
+    /*
      * Specifies whether the platform returns synthetic default values (e.g. 0 for numeric
      * columns etc.) for non-identity required columns when reading a model from a database.
      *
@@ -440,10 +446,10 @@ public class PlatformInfo
      */
     public void setSyntheticDefaultValueForRequiredReturned(boolean returningDefaultValue)
     {
-        _syntheticDefaultValueForRequiredReturned = returningDefaultValue;
+        this.syntheticDefaultValueForRequiredReturned = returningDefaultValue;
     }
 
-    /**
+    /*
      * Determines whether the platform is able to read the auto-increment status for columns
      * from an existing database.
      * 
@@ -452,10 +458,10 @@ public class PlatformInfo
      */
     public boolean getIdentityStatusReadingSupported()
     {
-        return _identityStatusReadingSupported;
+        return identityStatusReadingSupported;
     }
 
-    /**
+    /*
      * Specifies whether the platform is able to read the auto-increment status for columns
      * from an existing database.
      * 
@@ -464,52 +470,52 @@ public class PlatformInfo
      */
     public void setIdentityStatusReadingSupported(boolean canReadAutoIncrementStatus)
     {
-        _identityStatusReadingSupported = canReadAutoIncrementStatus;
+        this.identityStatusReadingSupported = canReadAutoIncrementStatus;
     }
 
     // other ddl properties
 
-    /**
+    /*
      * Determines whether the database supports SQL comments.
      *
      * @return <code>true</code> if comments are supported
      */
     public boolean isSqlCommentsSupported()
     {
-        return _sqlCommentsSupported;
+        return sqlCommentsSupported;
     }
 
-    /**
+    /*
      * Specifies whether SQL comments are supported by the database.
      * 
      * @param commentsSupported <code>true</code> if comments are supported
      */
     public void setSqlCommentsSupported(boolean commentsSupported)
     {
-        _sqlCommentsSupported = commentsSupported;
+        this.sqlCommentsSupported = commentsSupported;
     }
 
-    /**
+    /*
      * Determines whether delimited identifiers are supported.
      *
      * @return <code>true</code> if delimited identifiers are supported
      */
     public boolean isDelimitedIdentifiersSupported()
     {
-        return _delimitedIdentifiersSupported;
+        return delimitedIdentifiersSupported;
     }
 
-    /**
+    /*
      * Specifies whether delimited identifiers are supported.
      *
      * @param areSupported <code>true</code> if delimited identifiers are supported
      */
     public void setDelimitedIdentifiersSupported(boolean areSupported)
     {
-        _delimitedIdentifiersSupported = areSupported;
+        this.delimitedIdentifiersSupported = areSupported;
     }
 
-    /**
+    /*
      * Determines whether an ALTER TABLE statement shall be used for dropping indices
      * or constraints.  The default is false.
      * 
@@ -517,10 +523,10 @@ public class PlatformInfo
      */
     public boolean isAlterTableForDropUsed()
     {
-        return _alterTableForDropUsed;
+        return alterTableForDropUsed;
     }
 
-    /**
+    /*
      * Specifies whether an ALTER TABLE statement shall be used for dropping indices
      * or constraints.
      * 
@@ -528,10 +534,10 @@ public class PlatformInfo
      */
     public void setAlterTableForDropUsed(boolean useAlterTableForDrop)
     {
-        _alterTableForDropUsed = useAlterTableForDrop;
+        this.alterTableForDropUsed = useAlterTableForDrop;
     }
 
-    /**
+    /*
      * Determines whether the platform is allows the explicit specification of values for
      * identity columns in INSERT/UPDATE statements.
      * 
@@ -539,10 +545,10 @@ public class PlatformInfo
      */
     public boolean isIdentityOverrideAllowed()
     {
-        return _identityOverrideAllowed;
+        return identityOverrideAllowed;
     }
 
-    /**
+    /*
      * Specifies whether the platform is allows the explicit specification of values for
      * identity columns in INSERT/UPDATE statements.
      * 
@@ -550,10 +556,10 @@ public class PlatformInfo
      */
     public void setIdentityOverrideAllowed(boolean identityOverrideAllowed)
     {
-        _identityOverrideAllowed = identityOverrideAllowed;
+        this.identityOverrideAllowed = identityOverrideAllowed;
     }
 
-    /**
+    /*
      * Determines whether the values of identity columns can be read back from the
      * database after insertion of a row.
      * 
@@ -561,10 +567,10 @@ public class PlatformInfo
      */
     public boolean isLastIdentityValueReadable()
     {
-        return _lastIdentityValueReadable;
+        return lastIdentityValueReadable;
     }
 
-    /**
+    /*
      * Specifies whether the values of identity columns can be read back from the
      * database after insertion of a row.
      * 
@@ -572,10 +578,10 @@ public class PlatformInfo
      */
     public void setLastIdentityValueReadable(boolean lastIdentityValueReadable)
     {
-        _lastIdentityValueReadable = lastIdentityValueReadable;
+        this.lastIdentityValueReadable = lastIdentityValueReadable;
     }
 
-    /**
+    /*
      * Determines whether auto-commit mode for the reading of the values of identity columns
      * after insertion shall be used, i.e. whether between the insertion of the row and the
      * reading of the database-generated identity value a commit is issued.
@@ -584,10 +590,10 @@ public class PlatformInfo
      */
     public boolean isAutoCommitModeForLastIdentityValueReading()
     {
-        return _autoCommitModeForLastIdentityValueReading;
+        return autoCommitModeForLastIdentityValueReading;
     }
 
-    /**
+    /*
      * Determines whether auto-commit mode for the reading of the values of identity columns
      * after insertion shall be used, i.e. whether between the insertion of the row and the
      * reading of the database-generated identity value a commit is issued.
@@ -597,50 +603,50 @@ public class PlatformInfo
      */
     public void setAutoCommitModeForLastIdentityValueReading(boolean autoCommitModeForLastIdentityValueReading)
     {
-        _autoCommitModeForLastIdentityValueReading = autoCommitModeForLastIdentityValueReading;
+        this.autoCommitModeForLastIdentityValueReading = autoCommitModeForLastIdentityValueReading;
     }
 
-    /**
+    /*
      * Returns the maximum number of characters that a table name can have.
      * 
      * @return The number of characters, or -1 if not limited
      */
     public int getMaxTableNameLength()
     {
-        return _maxTableNameLength;
+        return maxTableNameLength;
     }
 
-    /**
+    /*
      * Returns the maximum number of characters that a column name can have.
      * 
      * @return The number of characters, or -1 if not limited
      */
     public int getMaxColumnNameLength()
     {
-        return _maxColumnNameLength;
+        return maxColumnNameLength;
     }
 
-    /**
+    /*
      * Returns the maximum number of characters that a constraint name can have.
      * 
      * @return The number of characters, or -1 if not limited
      */
     public int getMaxConstraintNameLength()
     {
-        return _maxConstraintNameLength;
+        return maxConstraintNameLength;
     }
 
-    /**
+    /*
      * Returns the maximum number of characters that a foreign key name can have.
      * 
      * @return The number of characters, or -1 if not limited
      */
     public int getMaxForeignKeyNameLength()
     {
-        return _maxForeignKeyNameLength;
+        return maxForeignKeyNameLength;
     }
 
-    /**
+    /*
      * Sets the maximum length of all identifiers that this database allows.
      * Use this method if the length limit is the same for all kinds of identifiers.
      * 
@@ -648,53 +654,53 @@ public class PlatformInfo
      */
     public void setMaxIdentifierLength(int maxIdentifierLength)
     {
-        _maxTableNameLength      = maxIdentifierLength;
-        _maxColumnNameLength     = maxIdentifierLength;
-        _maxConstraintNameLength = maxIdentifierLength;
-        _maxForeignKeyNameLength = maxIdentifierLength;
+        this.maxTableNameLength      = maxIdentifierLength;
+        this.maxColumnNameLength     = maxIdentifierLength;
+        this.maxConstraintNameLength = maxIdentifierLength;
+        this.maxForeignKeyNameLength = maxIdentifierLength;
     }
 
-    /**
+    /*
      * Sets the maximum length of table names that this database allows.
      * 
      * @param maxTableNameLength The maximum length, -1 if unlimited
      */
     public void setMaxTableNameLength(int maxTableNameLength)
     {
-        _maxTableNameLength = maxTableNameLength;
+        this.maxTableNameLength = maxTableNameLength;
     }
 
-    /**
+    /*
      * Sets the maximum length of column names that this database allows.
      * 
      * @param maxColumnNameLength The maximum length, -1 if unlimited
      */
     public void setMaxColumnNameLength(int maxColumnNameLength)
     {
-        _maxColumnNameLength = maxColumnNameLength;
+        this.maxColumnNameLength = maxColumnNameLength;
     }
 
-    /**
+    /*
      * Sets the maximum length of constraint names that this database allows.
      * 
      * @param maxConstraintNameLength The maximum length, -1 if unlimited
      */
     public void setMaxConstraintNameLength(int maxConstraintNameLength)
     {
-        _maxConstraintNameLength = maxConstraintNameLength;
+        this.maxConstraintNameLength = maxConstraintNameLength;
     }
 
-    /**
+    /*
      * Sets the maximum length of foreign key names that this database allows.
      * 
      * @param maxForeignKeyNameLength The maximum length, -1 if unlimited
      */
     public void setMaxForeignKeyNameLength(int maxForeignKeyNameLength)
     {
-        _maxForeignKeyNameLength = maxForeignKeyNameLength;
+        this.maxForeignKeyNameLength = maxForeignKeyNameLength;
     }
 
-    /**
+    /*
      * Returns the text that is used to delimit identifiers (eg. table names).
      * Per default, this is a double quotation character (").
      *
@@ -702,20 +708,20 @@ public class PlatformInfo
      */
     public String getDelimiterToken()
     {
-        return _delimiterToken;
+        return delimiterToken;
     }
 
-    /**
+    /*
      * Sets the text that is used to delimit identifiers (eg. table names).
      *
      * @param delimiterToken The delimiter text
      */
     public void setDelimiterToken(String delimiterToken)
     {
-        _delimiterToken = delimiterToken;
+        this.delimiterToken = delimiterToken;
     }
 
-    /**
+    /*
      * Returns the text that is used for for quoting values (e.g. text) when
      * printing default values and in generates insert/update/delete statements.
      * Per default, this is a single quotation character (').
@@ -724,10 +730,10 @@ public class PlatformInfo
      */
     public String getValueQuoteToken()
     {
-        return _valueQuoteToken;
+        return valueQuoteToken;
     }
 
-    /**
+    /*
      * Sets the text that is used for for quoting values (e.g. text) when
      * printing default values and in generates insert/update/delete statements.
      *
@@ -735,30 +741,30 @@ public class PlatformInfo
      */
     public void setValueQuoteToken(String valueQuoteChar)
     {
-        _valueQuoteToken = valueQuoteChar;
+        this.valueQuoteToken = valueQuoteChar;
     }
 
-    /**
+    /*
      * Returns the string that denotes the beginning of a comment.
      *
      * @return The comment prefix
      */
     public String getCommentPrefix()
     {
-        return _commentPrefix;
+        return commentPrefix;
     }
 
-    /**
+    /*
      * Sets the text that starts a comment.
      * 
      * @param commentPrefix The new comment prefix
      */
     public void setCommentPrefix(String commentPrefix)
     {
-        _commentPrefix = (commentPrefix == null ? "" : commentPrefix);
+        this.commentPrefix = (commentPrefix == null ? "" : commentPrefix);
     }
 
-    /**
+    /*
      * Returns the string that denotes the end of a comment. Note that comments will
      * be always on their own line.
      *
@@ -766,40 +772,40 @@ public class PlatformInfo
      */
     public String getCommentSuffix()
     {
-        return _commentSuffix;
+        return commentSuffix;
     }
 
-    /**
+    /*
      * Sets the text that ends a comment.
      * 
      * @param commentSuffix The new comment suffix
      */
     public void setCommentSuffix(String commentSuffix)
     {
-        _commentSuffix = (commentSuffix == null ? "" : commentSuffix);
+        this.commentSuffix = (commentSuffix == null ? "" : commentSuffix);
     }
 
-    /**
+    /*
      * Returns the text separating individual sql commands.
      *
      * @return The delimiter text
      */
     public String getSqlCommandDelimiter()
     {
-        return _sqlCommandDelimiter;
+        return sqlCommandDelimiter;
     }
 
-    /**
+    /*
      * Sets the text separating individual sql commands.
      *
      * @param sqlCommandDelimiter The delimiter text
      */
     public void setSqlCommandDelimiter(String sqlCommandDelimiter)
     {
-        _sqlCommandDelimiter = sqlCommandDelimiter;
+        this.sqlCommandDelimiter = sqlCommandDelimiter;
     }
 
-    /**
+    /*
      * Returns the database-native type for the given type code.
      * 
      * @param typeCode The {@link java.sql.Types} type code
@@ -807,10 +813,10 @@ public class PlatformInfo
      */
     public String getNativeType(int typeCode)
     {
-        return (String)_nativeTypes.get(new Integer(typeCode));
+        return (String)this.nativeTypes.get(new Integer(typeCode));
     }
 
-    /**
+    /*
      * Returns the jdbc type corresponding to the native type that is used for the given
      * jdbc type. This is most often the same jdbc type, but can also be a different one.
      * For instance, if a database has no native boolean type, then the source jdbc type
@@ -822,12 +828,12 @@ public class PlatformInfo
      */
     public int getTargetJdbcType(int typeCode)
     {
-        Integer targetJdbcType = (Integer)_targetJdbcTypes.get(new Integer(typeCode));
+        Integer targetJdbcType = (Integer)targetJdbcTypes.get(new Integer(typeCode));
 
         return targetJdbcType == null ? typeCode : targetJdbcType.intValue(); 
     }
 
-    /**
+    /*
      * Adds a mapping from jdbc type to database-native type.
      * 
      * @param jdbcTypeCode The jdbc type code as defined by {@link java.sql.Types}
@@ -835,10 +841,10 @@ public class PlatformInfo
      */
     public void addNativeTypeMapping(int jdbcTypeCode, String nativeType)
     {
-        _nativeTypes.put(new Integer(jdbcTypeCode), nativeType);
+        this.nativeTypes.put(new Integer(jdbcTypeCode), nativeType);
     }
 
-    /**
+    /*
      * Adds a mapping from jdbc type to database-native type.
      * 
      * @param jdbcTypeCode       The jdbc type code as defined by {@link java.sql.Types}
@@ -849,10 +855,10 @@ public class PlatformInfo
     public void addNativeTypeMapping(int jdbcTypeCode, String nativeType, int targetJdbcTypeCode)
     {
         addNativeTypeMapping(jdbcTypeCode, nativeType);
-        _targetJdbcTypes.put(new Integer(jdbcTypeCode), new Integer(targetJdbcTypeCode));
+        this.targetJdbcTypes.put(new Integer(jdbcTypeCode), new Integer(targetJdbcTypeCode));
     }
 
-    /**
+    /*
      * Adds a mapping from jdbc type to database-native type. Note that this
      * method accesses the named constant in {@link java.sql.Types} via reflection
      * and is thus safe to use under JDK 1.2/1.3 even with constants defined
@@ -877,11 +883,11 @@ public class PlatformInfo
         catch (Exception ex)
         {
             // ignore -> won't be defined
-            _log.warn("Cannot add native type mapping for undefined jdbc type "+jdbcTypeName, ex);
+            this.log.warn("Cannot add native type mapping for undefined jdbc type "+jdbcTypeName, ex);
         }
     }
 
-    /**
+    /*
      * Adds a mapping from jdbc type to database-native type. Note that this
      * method accesses the named constant in {@link java.sql.Types} via reflection
      * and is thus safe to use under JDK 1.2/1.3 even with constants defined
@@ -909,11 +915,11 @@ public class PlatformInfo
         catch (Exception ex)
         {
             // ignore -> won't be defined
-            _log.warn("Cannot add native type mapping for undefined jdbc type "+jdbcTypeName+", target jdbc type "+targetJdbcTypeName, ex);
+            this.log.warn("Cannot add native type mapping for undefined jdbc type "+jdbcTypeName+", target jdbc type "+targetJdbcTypeName, ex);
         }
     }
 
-    /**
+    /*
      * Determines whether the native type for the given sql type code (one of the
      * {@link java.sql.Types} constants) has a null default value on this platform.
      * 
@@ -922,10 +928,10 @@ public class PlatformInfo
      */
     public boolean hasNullDefault(int sqlTypeCode)
     {
-        return _typesWithNullDefault.contains(new Integer(sqlTypeCode));
+        return typesWithNullDefault.contains(new Integer(sqlTypeCode));
     }
     
-    /**
+    /*
      * Specifies whether the native type for the given sql type code (one of the
      * {@link java.sql.Types} constants) has a null default value on this platform.
      * 
@@ -936,15 +942,15 @@ public class PlatformInfo
     {
         if (hasNullDefault)
         {
-            _typesWithNullDefault.add(new Integer(sqlTypeCode));
+            this.typesWithNullDefault.add(new Integer(sqlTypeCode));
         }
         else
         {
-            _typesWithNullDefault.remove(new Integer(sqlTypeCode));
+            this.typesWithNullDefault.remove(new Integer(sqlTypeCode));
         }
     }
 
-    /**
+    /*
      * Determines whether the native type for the given sql type code (one of the
      * {@link java.sql.Types} constants) has a size specification on this platform.
      * 
@@ -953,10 +959,10 @@ public class PlatformInfo
      */
     public boolean hasSize(int sqlTypeCode)
     {
-        return _typesWithSize.contains(new Integer(sqlTypeCode));
+        return typesWithSize.contains(new Integer(sqlTypeCode));
     }
 
-    /**
+    /*
      * Specifies whether the native type for the given sql type code (one of the
      * {@link java.sql.Types} constants) has a size specification on this platform.
      * 
@@ -967,15 +973,15 @@ public class PlatformInfo
     {
         if (hasSize)
         {
-            _typesWithSize.add(new Integer(sqlTypeCode));
+            this.typesWithSize.add(new Integer(sqlTypeCode));
         }
         else
         {
-            _typesWithSize.remove(new Integer(sqlTypeCode));
+            this.typesWithSize.remove(new Integer(sqlTypeCode));
         }
     }
 
-    /**
+    /*
      * Returns the default size value for the given type, if any.
      * 
      * @param jdbcTypeCode The jdbc type code
@@ -983,10 +989,10 @@ public class PlatformInfo
      */
     public Integer getDefaultSize(int jdbcTypeCode)
     {
-        return (Integer)_typesDefaultSizes.get(new Integer(jdbcTypeCode));
+        return (Integer)typesDefaultSizes.get(new Integer(jdbcTypeCode));
     }
 
-    /**
+    /*
      * Adds a default size for the given jdbc type.
      * 
      * @param jdbcTypeCode The jdbc type code
@@ -994,10 +1000,10 @@ public class PlatformInfo
      */
     public void setDefaultSize(int jdbcTypeCode, int defaultSize)
     {
-        _typesDefaultSizes.put(new Integer(jdbcTypeCode), new Integer(defaultSize));
+        this.typesDefaultSizes.put(new Integer(jdbcTypeCode), new Integer(defaultSize));
     }
     
-    /**
+    /*
      * Adds a default size for the given jdbc type.
      * 
      * @param jdbcTypeName The name of the jdbc type, one of the {@link Types} constants
@@ -1017,11 +1023,11 @@ public class PlatformInfo
         catch (Exception ex)
         {
             // ignore -> won't be defined
-            _log.warn("Cannot add default size for undefined jdbc type "+jdbcTypeName, ex);
+            this.log.warn("Cannot add default size for undefined jdbc type "+jdbcTypeName, ex);
         }
     }
 
-    /**
+    /*
      * Determines whether the native type for the given sql type code (one of the
      * {@link java.sql.Types} constants) has precision and scale specifications on
      * this platform.
@@ -1031,10 +1037,10 @@ public class PlatformInfo
      */
     public boolean hasPrecisionAndScale(int sqlTypeCode)
     {
-        return _typesWithPrecisionAndScale.contains(new Integer(sqlTypeCode));
+        return typesWithPrecisionAndScale.contains(new Integer(sqlTypeCode));
     }
 
-    /**
+    /*
      * Specifies whether the native type for the given sql type code (one of the
      * {@link java.sql.Types} constants) has precision and scale specifications on
      * this platform.
@@ -1046,11 +1052,28 @@ public class PlatformInfo
     {
         if (hasPrecisionAndScale)
         {
-            _typesWithPrecisionAndScale.add(new Integer(sqlTypeCode));
+            this.typesWithPrecisionAndScale.add(new Integer(sqlTypeCode));
         }
         else
         {
-            _typesWithPrecisionAndScale.remove(new Integer(sqlTypeCode));
+            this.typesWithPrecisionAndScale.remove(new Integer(sqlTypeCode));
         }
     }
+    
+    public void setStoresUpperCaseInCatalog(boolean storesUpperCaseInCatalog) {
+        this.storesUpperCaseInCatalog = storesUpperCaseInCatalog;
+    }
+    
+    public boolean isStoresUpperCaseInCatalog() {
+        return storesUpperCaseInCatalog;
+    }
+    
+    public void setTriggersSupported(boolean triggersSupported) {
+        this.triggersSupported = triggersSupported;
+    }
+    
+    public boolean isTriggersSupported() {
+        return triggersSupported;
+    }
+    
 }

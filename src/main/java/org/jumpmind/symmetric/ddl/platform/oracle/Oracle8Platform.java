@@ -20,12 +20,11 @@ package org.jumpmind.symmetric.ddl.platform.oracle;
  */
 
 import java.sql.Types;
-import java.util.Map;
 
 import org.jumpmind.symmetric.ddl.PlatformInfo;
 import org.jumpmind.symmetric.ddl.platform.PlatformImplBase;
 
-/**
+/*
  * The platform for Oracle 8.
  * 
  * TODO: We might support the {@link org.jumpmind.symmetric.ddl.Platform#createDatabase(String, String, String, String, Map)}
@@ -35,20 +34,20 @@ import org.jumpmind.symmetric.ddl.platform.PlatformImplBase;
  */
 public class Oracle8Platform extends PlatformImplBase
 {
-    /** Database name of this platform. */
+    /* Database name of this platform. */
     public static final String DATABASENAME              = "Oracle";
-    /** The standard Oracle jdbc driver. */
+    /* The standard Oracle jdbc driver. */
     public static final String JDBC_DRIVER               = "oracle.jdbc.driver.OracleDriver";
-    /** The old Oracle jdbc driver. */
+    /* The old Oracle jdbc driver. */
     public static final String JDBC_DRIVER_OLD           = "oracle.jdbc.dnlddriver.OracleDriver";
-    /** The thin subprotocol used by the standard Oracle driver. */
+    /* The thin subprotocol used by the standard Oracle driver. */
     public static final String JDBC_SUBPROTOCOL_THIN     = "oracle:thin";
-    /** The thin subprotocol used by the standard Oracle driver. */
+    /* The thin subprotocol used by the standard Oracle driver. */
     public static final String JDBC_SUBPROTOCOL_OCI8     = "oracle:oci8";
-    /** The old thin subprotocol used by the standard Oracle driver. */
+    /* The old thin subprotocol used by the standard Oracle driver. */
     public static final String JDBC_SUBPROTOCOL_THIN_OLD = "oracle:dnldthin";
 
-    /**
+    /*
      * Creates a new platform instance.
      */
     public Oracle8Platform()
@@ -78,7 +77,7 @@ public class Oracle8Platform extends PlatformImplBase
         info.addNativeTypeMapping(Types.REF,           "BLOB",             Types.BLOB);
         info.addNativeTypeMapping(Types.SMALLINT,      "NUMBER(5)");
         info.addNativeTypeMapping(Types.STRUCT,        "BLOB",             Types.BLOB);
-        info.addNativeTypeMapping(Types.TIME,          "DATE",             Types.TIMESTAMP);
+        info.addNativeTypeMapping(Types.TIME,          "DATE",             Types.DATE);
         info.addNativeTypeMapping(Types.TIMESTAMP,     "DATE");
         info.addNativeTypeMapping(Types.TINYINT,       "NUMBER(3)");
         info.addNativeTypeMapping(Types.VARBINARY,     "RAW");
@@ -91,12 +90,14 @@ public class Oracle8Platform extends PlatformImplBase
         info.setDefaultSize(Types.VARCHAR,    254);
         info.setDefaultSize(Types.BINARY,     254);
         info.setDefaultSize(Types.VARBINARY,  254);
+        
+        info.setStoresUpperCaseInCatalog(true);
 
         setSqlBuilder(new Oracle8Builder(this));
-        setModelReader(new Oracle8ModelReader(this));
+        setModelReader(new OracleModelReader(this));
     }
 
-    /**
+    /*
      * {@inheritDoc}
      */
     public String getName()

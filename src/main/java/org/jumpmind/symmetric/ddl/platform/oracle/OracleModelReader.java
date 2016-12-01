@@ -19,6 +19,7 @@ package org.jumpmind.symmetric.ddl.platform.oracle;
  * under the License.
  */
 
+import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -48,28 +49,26 @@ import org.jumpmind.symmetric.ddl.model.TypeMap;
 import org.jumpmind.symmetric.ddl.platform.DatabaseMetaDataWrapper;
 import org.jumpmind.symmetric.ddl.platform.JdbcModelReader;
 
-/**
+/*
  * Reads a database model from an Oracle 8 database.
- *
- * @version $Revision: $
  */
-public class Oracle8ModelReader extends JdbcModelReader
+public class OracleModelReader extends JdbcModelReader
 {
-    private final Log _log = LogFactory.getLog(Oracle8ModelReader.class);
+    private final Log _log = LogFactory.getLog(OracleModelReader.class);
     
-	/** The regular expression pattern for the Oracle conversion of ISO dates. */
+	/* The regular expression pattern for the Oracle conversion of ISO dates. */
 	private Pattern _oracleIsoDatePattern;
-	/** The regular expression pattern for the Oracle conversion of ISO times. */
+	/* The regular expression pattern for the Oracle conversion of ISO times. */
 	private Pattern _oracleIsoTimePattern;
-	/** The regular expression pattern for the Oracle conversion of ISO timestamps. */
+	/* The regular expression pattern for the Oracle conversion of ISO timestamps. */
 	private Pattern _oracleIsoTimestampPattern;
 
-	/**
+	/*
      * Creates a new model reader for Oracle 8 databases.
      * 
      * @param platform The platform that this model reader belongs to
      */
-    public Oracle8ModelReader(Platform platform)
+    public OracleModelReader(Platform platform)
     {
         super(platform);
         setDefaultCatalogPattern(null);
@@ -89,52 +88,79 @@ public class Oracle8ModelReader extends JdbcModelReader
         	throw new DdlUtilsException(ex);
         }
     }
+    
+    @Override
+    protected Table readTable(Connection connection, DatabaseMetaDataWrapper metaData, Map values)
+            throws SQLException {
+        // Oracle 10 added the recycle bin which contains dropped database
+        // objects not yet purged
+        // Since we don't want entries from the recycle bin, we filter them out
+        boolean tableHasBeenDeleted = isTableInRecycleBin(connection, values);
 
-    /**
-     * {@inheritDoc}
-     */
-    protected Table readTable(DatabaseMetaDataWrapper metaData, Map values) throws SQLException
-    {
-        String tableName = (String)values.get("TABLE_NAME");
+        if (!tableHasBeenDeleted) {
+            String tableName = (String) values.get("TABLE_NAME");
 
-        // system table ?
-        if (tableName.indexOf('$') > 0)
-        {
+            // system table ?
+            if (tableName.indexOf('$') > 0) {
+                return null;
+            }
+
+            Table table = super.readTable(connection, metaData, values);
+            if (table != null) {
+                determineAutoIncrementColumns(connection, table);
+            }
+
+            return table;
+        } else {
             return null;
         }
-
-        Table table = super.readTable(metaData, values);
-
-        if (table != null)
-        {
-            determineAutoIncrementColumns(table);
-        }
-
-        return table;
     }
     
-    protected void retypeIfNecessary(Map values) {
-        int typeCode = ((Integer)values.get("DATA_TYPE")).intValue();
-        // TIMESTAMP WITH TIMEZONE and TIMESTAMP WITH LOCAL TIME ZONE (See oracle.jdbc.OracleTypes)
-        if (typeCode == -101 || typeCode == -102) {
-            values.put("DATA_TYPE", Types.TIMESTAMP);
-        }   
+    protected boolean isTableInRecycleBin(Connection connection, Map values) throws SQLException {
+        ResultSet rs = null;
+        PreparedStatement stmt = null;
+        try {
+            stmt = connection.prepareStatement("SELECT * FROM RECYCLEBIN WHERE OBJECT_NAME=?");
+            stmt.setString(1, (String) values.get("TABLE_NAME"));
+
+            rs = stmt.executeQuery();
+            return rs.next();
+        } finally {
+            close(rs);
+            close(stmt);
+        }
+    }
+    
+    @Override
+    protected Integer overrideJdbcTypeForColumn(Map<String,Object> values) {
+        String typeName = (String) values.get("TYPE_NAME");
+        if (typeName != null && typeName.startsWith("DATE")) {
+            return Types.DATE;
+        } else if (typeName != null && typeName.startsWith("TIMESTAMP")) {
+            // This is for Oracle's TIMESTAMP(9)
+            return Types.TIMESTAMP;
+        } else if (typeName != null && typeName.startsWith("NVARCHAR")) {
+            // This is for Oracle's NVARCHAR type
+            return Types.VARCHAR;
+        } else if (typeName != null && typeName.startsWith("LONGNVARCHAR")) {
+            return Types.LONGVARCHAR;            
+        } else if (typeName != null && typeName.startsWith("NCHAR")) {
+            return Types.CHAR;
+        } else if (typeName != null && typeName.startsWith("NCLOB")) {
+            return Types.CLOB;
+        } else if (typeName != null && typeName.startsWith("BINARY_FLOAT")) {
+            return Types.FLOAT;
+        } else if (typeName != null && typeName.startsWith("BINARY_DOUBLE")) {
+            return Types.DOUBLE;
+        } else {
+            return super.overrideJdbcTypeForColumn(values);
+        }
     }
 
-	/**
-     * {@inheritDoc}
-     */
+    @Override
     protected Column readColumn(DatabaseMetaDataWrapper metaData, Map values) throws SQLException
     {
-    	retypeIfNecessary(values);
-    	
 		Column column = super.readColumn(metaData, values);
-
-		if (column.getDefaultValue() != null)
-		{
-			// Oracle pads the default value with spaces
-			column.setDefaultValue(column.getDefaultValue().trim());
-		}
 		if (column.getTypeCode() == Types.DECIMAL)
 		{
 			// We're back-mapping the NUMBER columns returned by Oracle
@@ -196,10 +222,6 @@ public class Oracle8ModelReader extends JdbcModelReader
 		}
 		else if ((column.getTypeCode() == Types.DATE) || (column.getTypeCode() == Types.TIMESTAMP))
 		{
-			// Oracle has only one DATE/TIME type, so we can't know which it is and thus map
-			// it back to TIMESTAMP
-			column.setTypeCode(Types.TIMESTAMP);
-
 			// we also reverse the ISO-format adaptation, and adjust the default value to timestamp
 			if (column.getDefaultValue() != null)
 			{
@@ -237,29 +259,29 @@ public class Oracle8ModelReader extends JdbcModelReader
 		return column;
 	}
 
-    /**
+    /*
      * Helper method that determines the auto increment status using Firebird's system tables.
      *
      * @param table The table
      */
-    protected void determineAutoIncrementColumns(Table table) throws SQLException
+    protected void determineAutoIncrementColumns(Connection connection, Table table) throws SQLException
     {
         Column[] columns = table.getColumns();
 
         for (int idx = 0; idx < columns.length; idx++)
         {
-            columns[idx].setAutoIncrement(isAutoIncrement(table, columns[idx]));
+            columns[idx].setAutoIncrement(isAutoIncrement(connection, table, columns[idx]));
         }
     }
 
-    /**
+    /*
      * Tries to determine whether the given column is an identity column.
      * 
      * @param table  The table
      * @param column The column
      * @return <code>true</code> if the column is an identity column
      */
-    protected boolean isAutoIncrement(Table table, Column column) throws SQLException
+    protected boolean isAutoIncrement(Connection connection, Table table, Column column) throws SQLException
     {
         // TODO: For now, we only check whether there is a sequence & trigger as generated by DdlUtils
         //       But once sequence/trigger support is in place, it might be possible to 'parse' the
@@ -276,7 +298,7 @@ public class Oracle8ModelReader extends JdbcModelReader
         }
         try
         {
-            prepStmt = getConnection().prepareStatement("SELECT * FROM user_triggers WHERE trigger_name = ?");
+            prepStmt = connection.prepareStatement("SELECT * FROM user_triggers WHERE trigger_name = ?");
             prepStmt.setString(1, triggerName);
 
             ResultSet resultSet = prepStmt.executeQuery();
@@ -288,7 +310,7 @@ public class Oracle8ModelReader extends JdbcModelReader
             // we have a trigger, so lets check the sequence
             prepStmt.close();
 
-            prepStmt = getConnection().prepareStatement("SELECT * FROM user_sequences WHERE sequence_name = ?");
+            prepStmt = connection.prepareStatement("SELECT * FROM user_sequences WHERE sequence_name = ?");
             prepStmt.setString(1, seqName);
 
             resultSet = prepStmt.executeQuery();
@@ -303,10 +325,8 @@ public class Oracle8ModelReader extends JdbcModelReader
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    protected Collection readIndices(DatabaseMetaDataWrapper metaData, String tableName) throws SQLException
+    @Override
+    protected Collection readIndices(Connection connection, DatabaseMetaDataWrapper metaData, String tableName) throws SQLException
     {
         // Oracle bug 4999817 causes a table analyze to execute in response to a call to 
     // DatabaseMetaData#getIndexInfo.
@@ -336,7 +356,7 @@ public class Oracle8ModelReader extends JdbcModelReader
 
         try
         {
-            stmt = getConnection().prepareStatement(query.toString());
+            stmt = connection.prepareStatement(query.toString());
             stmt.setString(1, getPlatform().isDelimitedIdentifierModeOn() ? tableName : tableName.toUpperCase());
             stmt.setString(2, "N");
             stmt.setString(3, "TABLE");
