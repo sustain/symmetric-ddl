@@ -351,7 +351,7 @@ public class ModelComparator
     {
         ArrayList changes = new ArrayList();
 
-        if (_platformInfo.getTargetJdbcType(targetColumn.getTypeCode()) != sourceColumn.getTypeCode())
+        if (targetColumn.getTypeCode() != sourceColumn.getTypeCode() && _platformInfo.getTargetJdbcType(targetColumn.getTypeCode()) != sourceColumn.getTypeCode())
         {
             if (_log.isDebugEnabled()) {
                 _log.debug("The " + sourceColumn.getName() + " column on the " + sourceTable.getName() + " table changed type codes from " + sourceColumn.getTypeCode() + " to " + targetColumn.getTypeCode());
@@ -367,6 +367,8 @@ public class ModelComparator
             Integer defaultSize = _platformInfo.getDefaultSize(_platformInfo.getTargetJdbcType(targetColumn.getTypeCode()));
             if (defaultSize != null) {
                 targetSize = defaultSize.toString();
+            } else {
+                targetSize = "0";
             }
         }
         if (sizeMatters &&
@@ -378,8 +380,10 @@ public class ModelComparator
             changes.add(new ColumnSizeChange(sourceTable, sourceColumn, targetColumn.getSizeAsInt(), targetColumn.getScale()));
         }
         else if (scaleMatters &&
-            (!StringUtils.equals(sourceColumn.getSize(), targetColumn.getSize()) ||
-             (sourceColumn.getScale() != targetColumn.getScale())))
+            (!StringUtils.equals(sourceColumn.getSize(), targetSize) ||
+              // ojdbc6.jar returns -127 for the scale of NUMBER that was not given a size or precision
+             (!(sourceColumn.getScale() < 0 && targetColumn.getScale() == 0) && 
+                     sourceColumn.getScale() != targetColumn.getScale())))
         {
             if (_log.isDebugEnabled()) {
                 _log.debug("The " + sourceColumn.getName() + " column on the " + sourceTable.getName() + " table changed scale from (" + sourceColumn.getSizeAsInt() + ","+sourceColumn.getScale() + ") to (" + targetColumn.getSizeAsInt() + ","+targetColumn.getScale() + ")");
