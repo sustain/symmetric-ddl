@@ -49,7 +49,7 @@ public class Table implements Serializable, Cloneable
     private String _schema = null;
     /** The name. */
     private String _name = null;
-    /** A desription of the table. */
+    /** A description of the table. */
     private String _description = null;
     /** The table's type as read from the database. */
     private String _type = null;
@@ -836,7 +836,7 @@ public class Table implements Serializable, Cloneable
         result.append("; catalog=");
         result.append(getCatalog());
         result.append("; schema=");
-        result.append(getCatalog());
+        result.append(getSchema());
         result.append("; type=");
         result.append(getType());
         result.append("] columns:");

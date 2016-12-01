@@ -61,10 +61,12 @@ public class SybasePlatform extends PlatformImplBase
     {
         PlatformInfo info = getPlatformInfo();
 
-        info.setMaxIdentifierLength(28);
+        info.setMaxIdentifierLength(128);
         info.setNullAsDefaultValueRequired(true);
         info.setCommentPrefix("/*");
         info.setCommentSuffix("*/");
+        info.setDelimiterToken("\"");
+        setDelimitedIdentifierModeOn(true);
 
         info.addNativeTypeMapping(Types.ARRAY,         "IMAGE");
         // BIGINT is mapped back in the model reader

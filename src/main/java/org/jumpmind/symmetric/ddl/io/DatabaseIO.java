@@ -95,7 +95,7 @@ public class DatabaseIO
 
     /**
      * Returns the commons-betwixt mapping file as an {@link org.xml.sax.InputSource} object.
-     * Per default, this will be classpath resource under the path <code>/org/jumpmind/symmetric/ddl/io/mapping.xml</code>.
+     * Per default, this will be classpath resource under the path <code>/mapping.xml</code>.
      *  
      * @return The input source for the mapping
      */

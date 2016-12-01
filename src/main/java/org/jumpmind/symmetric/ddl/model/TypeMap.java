@@ -94,7 +94,7 @@ public abstract class TypeMap
     public static final String VARBINARY     = "VARBINARY";
     /** The string representation of the {@link java.sql.Types#VARCHAR} constant. */
     public static final String VARCHAR       = "VARCHAR";
-
+    
     public static final String SQLXML = "SQLXML";
     /** Maps type names to the corresponding {@link java.sql.Types} constants. */
     private static HashMap _typeNameToTypeCode = new HashMap();
