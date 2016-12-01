@@ -133,10 +133,31 @@ public class Oracle8Builder extends SqlBuilder
     protected void createAutoIncrementSequence(Table  table,
                                                Column column) throws IOException
     {
+        if (column.isSkipAutoIncrementSequenceCreation()) {
+            return;
+        }
+        createSequence(getSequenceName(table, column));
+    }
+
+    /*
+     * Creates the a database sequence
+     *
+     * @param sequenceName  The name of the sequence
+     */
+    public void createSequence(String sequenceName) throws IOException
+    {
         print("CREATE SEQUENCE ");
-        printIdentifier(getConstraintName("seq", table, column.getName(), null));
+        printIdentifier(sequenceName);
         print(" CACHE 1000 ORDER");
         printEndOfStatement();
+    }
+
+    private String getSequenceName(Table table, Column column) {
+        String sequenceName = column.getAutoIncrementSequenceName();
+        if (sequenceName != null) {
+            return sequenceName;
+        }
+        return getConstraintName("seq", table, column.getName(), null);
     }
 
     /*
@@ -163,7 +184,7 @@ public class Oracle8Builder extends SqlBuilder
             println(" IS NULL)");
             println("BEGIN");
             print("  SELECT ");
-            printIdentifier(getConstraintName("seq", table, column.getName(), null));
+            printIdentifier(getSequenceName(table, column));
             print(".nextval INTO :new.");
             printIdentifier(columnName);
             print(" FROM dual");
@@ -186,7 +207,7 @@ public class Oracle8Builder extends SqlBuilder
             printIdentifier(columnName);
             println(" IS NULL)");
             print("BEGIN SELECT ");
-            printIdentifier(getConstraintName("seq", table, column.getName(), null));
+            printIdentifier(getSequenceName(table, column));
             print(".nextval INTO :new.");
             printIdentifier(columnName);
             print(" FROM dual");
@@ -210,7 +231,7 @@ public class Oracle8Builder extends SqlBuilder
                                              Column column) throws IOException
     {
         print("DROP SEQUENCE ");
-        printIdentifier(getConstraintName("seq", table, column.getName(), null));
+        printIdentifier(getSequenceName(table, column));
         printEndOfStatement();
     }
 
@@ -351,7 +372,7 @@ public class Oracle8Builder extends SqlBuilder
                 {
                     result.append(",");
                 }
-                result.append(getDelimitedIdentifier(getConstraintName("seq", table, columns[idx].getName(), null)));
+                result.append(getDelimitedIdentifier(getSequenceName(table, columns[idx])));
                 result.append(".currval");
             }
             result.append(" FROM dual");

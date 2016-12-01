@@ -387,6 +387,24 @@ public abstract class PlatformImplBase extends JdbcSupport implements Platform
     /*
      * {@inheritDoc}
      */
+    public void createSequence(String sequenceName, boolean continueOnError) {
+        Connection connection = borrowConnection();
+        StringWriter buffer = new StringWriter();
+
+        getSqlBuilder().setWriter(buffer);
+        try {
+            getSqlBuilder().createSequence(sequenceName);
+        } catch (IOException ignore) {
+            // won't happen because we're using a string writer
+        }
+        String sql = buffer.toString();
+
+        evaluateBatch(connection, sql, continueOnError);
+    }
+
+    /*
+     * {@inheritDoc}
+     */
     public void createTables(Database model, boolean dropTablesFirst, boolean continueOnError) throws DatabaseOperationException
     {
         Connection connection = borrowConnection();

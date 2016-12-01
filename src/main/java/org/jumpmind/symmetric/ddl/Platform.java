@@ -253,6 +253,14 @@ public interface Platform
     public void dropDatabase(String jdbcDriverClassName, String connectionUrl, String username, String password) throws DatabaseOperationException, UnsupportedOperationException;
 
     /*
+     * Creates a sequence database with the given name
+     *
+     * @param sequenceName        The name of the database sequence
+     * @param continueOnError     Whether to continue executing the sql commands when an error occurred
+     */
+    public void createSequence(String sequenceName, boolean continueOnError);
+
+    /*
      * Creates the tables defined in the database model.
      * 
      * @param model           The database model

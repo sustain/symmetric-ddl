@@ -114,6 +114,9 @@ public class PostgreSqlBuilder extends SqlBuilder
      */
     private void createAutoIncrementSequence(Table table, Column column) throws IOException
     {
+        if (column.isSkipAutoIncrementSequenceCreation()) {
+            return;
+        }
         if (PostgreSqlPlatform.isUsePseudoSequence()) {
             print("CREATE TABLE ");
             print(getConstraintName(null, table, column.getName(), "tbl"));
@@ -121,7 +124,7 @@ public class PostgreSqlBuilder extends SqlBuilder
             printEndOfStatement();
             
             print("CREATE FUNCTION ");
-            print(getConstraintName(null, table, column.getName(), "seq"));
+            print(getSequenceName(table, column));
             print("() ");
             print("RETURNS INT8 AS $$ ");
             print("DECLARE curVal int8; ");
@@ -144,10 +147,28 @@ public class PostgreSqlBuilder extends SqlBuilder
             println("$$ LANGUAGE plpgsql; ");
 
         } else {
-            print("CREATE SEQUENCE ");
-            printIdentifier(getConstraintName(null, table, column.getName(), "seq"));
-            printEndOfStatement();
+            createSequence(getSequenceName(table, column));
         }
+    }
+
+    /*
+     * Creates the a database sequence
+     *
+     * @param sequenceName  The name of the sequence
+     */
+    public void createSequence(String sequenceName) throws IOException
+    {
+        print("CREATE SEQUENCE ");
+        printIdentifier(sequenceName);
+        printEndOfStatement();
+    }
+
+    private String getSequenceName(Table table, Column column) {
+        String sequenceName = column.getAutoIncrementSequenceName();
+        if (sequenceName != null) {
+            return sequenceName;
+        }
+        return getConstraintName(null, table, column.getName(), "seq");
     }
 
     /*
@@ -164,12 +185,12 @@ public class PostgreSqlBuilder extends SqlBuilder
             printEndOfStatement();
             
             print("DROP FUNCTION ");
-            print(getConstraintName(null, table, column.getName(), "seq"));
+            print(getSequenceName(table, column));
             print("()");
             printEndOfStatement();
         } else {
             print("DROP SEQUENCE ");
-            printIdentifier(getConstraintName(null, table, column.getName(), "seq"));
+            printIdentifier(getSequenceName(table, column));
             printEndOfStatement();
         }
     }
@@ -181,11 +202,11 @@ public class PostgreSqlBuilder extends SqlBuilder
     {
         if (PostgreSqlPlatform.isUsePseudoSequence()) {
             print(" DEFAULT ");
-            print(getConstraintName(null, table, column.getName(), "seq"));
+            print(getSequenceName(table, column));
             print("()");
         } else {
             print(" DEFAULT nextval('");
-            printIdentifier(getConstraintName(null, table, column.getName(), "seq"));
+            printIdentifier(getSequenceName(table, column));
             print("')");
         }
     }
@@ -213,7 +234,7 @@ public class PostgreSqlBuilder extends SqlBuilder
                     result.append(", ");
                 }
                 result.append("currval('");
-                result.append(getDelimitedIdentifier(getConstraintName(null, table, columns[idx].getName(), "seq")));
+                result.append(getDelimitedIdentifier(getSequenceName(table, columns[idx])));
                 result.append("') AS ");
                 result.append(getDelimitedIdentifier(columns[idx].getName()));
             }

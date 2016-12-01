@@ -1371,6 +1371,16 @@ public abstract class SqlBuilder
         }
     }
 
+    /*
+     * Creates the a database sequence
+     *
+     * @param sequenceName  The name of the sequence
+     */
+    public void createSequence(String sequenceName) throws IOException
+    {
+        throw new DdlUtilsException("Database does not support sequences");
+    }
+
     /**
      * Creates the external foreignkey creation statements for all tables in the database.
      * 
